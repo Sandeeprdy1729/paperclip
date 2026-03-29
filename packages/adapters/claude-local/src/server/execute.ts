@@ -309,6 +309,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
   const dangerouslySkipPermissions = asBoolean(config.dangerouslySkipPermissions, false);
   const instructionsFilePath = asString(config.instructionsFilePath, "").trim();
   const instructionsFileDir = instructionsFilePath ? `${path.dirname(instructionsFilePath)}/` : "";
+  const instructionsRootPath = asString(config.instructionsRootPath, "").trim();
   const commandNotes = instructionsFilePath
     ? [
         `Injected agent instructions via --append-system-prompt-file ${instructionsFilePath} (with path directive appended)`,
@@ -415,6 +416,12 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
       args.push("--append-system-prompt-file", effectiveInstructionsFilePath);
     }
     args.push("--add-dir", skillsDir);
+    if (instructionsRootPath && path.isAbsolute(instructionsRootPath)) {
+      // instructionsRootPath is the managed-bundle directory (e.g. …/agents/<id>/instructions).
+      // The agent also stores files (HEARTBEAT.md, SOUL.md, TOOLS.md) in the parent agent
+      // directory, so we add the parent so Claude treats the whole tree as a project root.
+      args.push("--add-dir", path.dirname(instructionsRootPath));
+    }
     if (extraArgs.length > 0) args.push(...extraArgs);
     return args;
   };
